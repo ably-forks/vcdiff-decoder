@@ -25,10 +25,10 @@ module.exports = function (grunt) {
 		},
 		webpack: {
 			options: {
-				entry: './lib/vcdiff_decoder.js',
+				entry: './lib/index.js',
 				output: {
 					path: path.resolve(__dirname, 'dist'),
-					library: 'vcdiffDecoder'
+					library: 'vcdiff'
 				},
 				module: {
 					rules: [

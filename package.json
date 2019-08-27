@@ -2,7 +2,7 @@
   "name": "@ably/vcdiff-decoder",
   "version": "1.0.1",
   "description": "Pure JavaScript vcdiff decoder that works with binary deltas from Google's open-vcdiff",
-  "main": "lib/vcdiff_decoder.js",
+  "main": "lib/index.js",
   "scripts": {
     "test": "grunt test:all"
   },
@@ -51,5 +51,9 @@
     "webpack": "^4.38.0",
     "webpack-cli": "^3.3.6"
   },
-  "homepage": "https://github.com/ably-forks/vcdiff-decoder"
+  "homepage": "https://github.com/ably-forks/vcdiff-decoder",
+  "dependencies": {
+    "@protobufjs/base64": "^1.1.2",
+    "@protobufjs/utf8": "^1.1.0"
+  }
 }
