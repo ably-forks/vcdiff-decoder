@@ -5204,6 +5204,8 @@ module.exports = SameCache;
 
 __webpack_require__(66);
 
+__webpack_require__(154);
+
 __webpack_require__(82);
 
 __webpack_require__(91);
@@ -5256,57 +5258,74 @@ __webpack_require__(125);
 
 __webpack_require__(126);
 
+var utf8 = __webpack_require__(155);
+
+var base64 = __webpack_require__(156);
+
 var vcdiffDecoder = __webpack_require__(1);
 
-var utf8 = __webpack_require__(154);
-
-var base64 = __webpack_require__(155);
-
-function VcdiffSequenceDecoder(initialValue) {
-  initialize.call(this, initialValue);
+function VcdiffSequenceDecoder(source, sourceId) {
+  initialize.call(this, source, sourceId);
 }
 
-VcdiffSequenceDecoder.prototype.decodeToUint8Array = function (delta) {
+VcdiffSequenceDecoder.prototype.decodeToUint8Array = function (delta, deltaId, sourceId) {
+  if (this.sourceId !== sourceId) {
+    throw new Error('Sequence discontinuity - the provided sourceId does not match the last sourceId');
+  }
+
   var deltaAsUint8Array = undefined;
 
   if (typeof delta === 'string') {
     deltaAsUint8Array = new Uint8Array(base64.length(delta));
     base64.decode(delta, deltaAsUint8Array, 0);
+  } else if (isArrayBuffer(delta)) {
+    deltaAsUint8Array = new Uint8Array(delta);
   } else {
     deltaAsUint8Array = delta;
   }
 
-  var decoded = vcdiffDecoder.decodeSync(deltaAsUint8Array, this.dictionary);
-  this.dictionary = decoded;
+  var decoded = vcdiffDecoder.decodeSync(deltaAsUint8Array, this.source);
+  this.source = decoded;
+  this.sourceId = deltaId;
   return decoded;
 };
 
-VcdiffSequenceDecoder.prototype.decodeToUtf8String = function (delta) {
-  var decoded = this.decodeToUint8Array(delta);
+VcdiffSequenceDecoder.prototype.decodeToUtf8String = function (delta, deltaId, sourceId) {
+  var decoded = this.decodeToUint8Array(delta, deltaId, sourceId);
   return utf8.read(decoded, 0, decoded.length);
 };
 
-VcdiffSequenceDecoder.prototype.decodeToObject = function (delta) {
-  var decoded = this.decodeToUtf8String(delta);
+VcdiffSequenceDecoder.prototype.decodeToObject = function (delta, deltaId, sourceId) {
+  var decoded = this.decodeToUtf8String(delta, deltaId, sourceId);
   return JSON.parse(decoded);
 };
 
-VcdiffSequenceDecoder.prototype.reinitialize = function (newInitialValue) {
-  initialize.call(this, newInitialValue);
+VcdiffSequenceDecoder.prototype.reinitialize = function (newSource, newSourceId) {
+  initialize.call(this, newSource, newSourceId);
 };
 
-function initialize(initialValue) {
-  if (isUint8Array(initialValue)) {
-    this.dictionary = initialValue;
-  } else if (typeof initialValue === 'string') {
-    this.dictionary = utf8Encode(initialValue);
-  } else {
-    this.dictionary = utf8Encode(JSON.stringify(initialValue));
+function initialize(source, sourceId) {
+  if (source === null || source === undefined) {
+    throw new Error('VcdiffSequenceDecoder cannot be initialized or reinitialized with null or undefined');
   }
+
+  if (isUint8Array(source)) {
+    this.source = source;
+  } else if (typeof source === 'string') {
+    this.source = utf8Encode(source);
+  } else {
+    this.source = utf8Encode(JSON.stringify(source));
+  }
+
+  this.sourceId = sourceId;
 }
 
 function isUint8Array(object) {
   return object !== null && object !== undefined && object.constructor === Uint8Array;
+}
+
+function isArrayBuffer(object) {
+  return object !== null && object !== undefined && object.constructor === ArrayBuffer;
 }
 
 function utf8Encode(str) {
@@ -5319,6 +5338,30 @@ module.exports = VcdiffSequenceDecoder;
 
 /***/ }),
 /* 154 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var $ = __webpack_require__(4);
+var global = __webpack_require__(5);
+var arrayBufferModule = __webpack_require__(83);
+var setSpecies = __webpack_require__(101);
+
+var ARRAY_BUFFER = 'ArrayBuffer';
+var ArrayBuffer = arrayBufferModule[ARRAY_BUFFER];
+var NativeArrayBuffer = global[ARRAY_BUFFER];
+
+// `ArrayBuffer` constructor
+// https://tc39.github.io/ecma262/#sec-arraybuffer-constructor
+$({ global: true, forced: NativeArrayBuffer !== ArrayBuffer }, {
+  ArrayBuffer: ArrayBuffer
+});
+
+setSpecies(ARRAY_BUFFER);
+
+
+/***/ }),
+/* 155 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5430,7 +5473,7 @@ utf8.write = function utf8_write(string, buffer, offset) {
 
 
 /***/ }),
-/* 155 */
+/* 156 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
