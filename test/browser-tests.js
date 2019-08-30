@@ -14,7 +14,7 @@ describe('vcdiffDecoder', function() {
 						return;
 					}
 
-					let decodedTarget = vcdiffDecoder.decodeSync(delta, dictionary);
+					let decodedTarget = vcdiff.VcdiffDecoder.decodeSync(delta, dictionary);
 					let decodedBuffer = Buffer.from(decodedTarget);
 					assert.isTrue(decodedBuffer.equals(Buffer.from(target)), 'The result from decodeSync() should match the target.');
 					done();
