@@ -5,7 +5,7 @@ const fs = require('fs');
 const assert = require('chai').assert;
 const vcd = require('vcdiff');
 
-const vcdiffDecoder = require('../');
+const { VcdiffDecoder } = require('../');
 const errors = require('../lib/errors');
 const VCDiff = require('../lib/vcdiff');
 const TypedArray = require('../lib/typed_array_util');
@@ -24,7 +24,7 @@ describe('vcdiffDecoder', function() {
       let hashedSource = new vcd.HashedDictionary(new Buffer(sourceString));
       let delta = new Uint8Array(vcd.vcdiffEncodeSync(new Buffer(targetString), { hashedDictionary: hashedSource }));
 
-      let decodedTarget = vcdiffDecoder.decodeSync(delta, TypedArray.stringToUint8Array(sourceString));
+      let decodedTarget = VcdiffDecoder.decodeSync(delta, TypedArray.stringToUint8Array(sourceString));
       let decodedString = TypedArray.uint8ArrayToString(decodedTarget);
       // make sure decoded is same as target
       assert.strictEqual(decodedString, targetString.toString());
@@ -37,7 +37,7 @@ describe('vcdiffDecoder', function() {
       let hashedSource = new vcd.HashedDictionary(angular12);
       let delta = new Uint8Array(vcd.vcdiffEncodeSync(angular15, { hashedDictionary: hashedSource }));
 
-      let decodedTarget = vcdiffDecoder.decodeSync(delta, angular12);
+      let decodedTarget = VcdiffDecoder.decodeSync(delta, angular12);
       let decodedString = Buffer.from(decodedTarget).toString();
       // make sure decoded is same as target
       assert.strictEqual(decodedString, angular15.toString());
@@ -49,7 +49,7 @@ describe('vcdiffDecoder', function() {
         const delta = fs.readFileSync(__dirname + '/fixtures/xdelta/' + fixture + '/delta');
         const target = fs.readFileSync(__dirname + '/fixtures/xdelta/' + fixture + '/target');
 
-        let decodedTarget = vcdiffDecoder.decodeSync(delta, dictionary);
+        let decodedTarget = VcdiffDecoder.decodeSync(delta, dictionary);
         let decodedBuffer = Buffer.from(decodedTarget);
         assert.isTrue(decodedBuffer.equals(target));
       });
