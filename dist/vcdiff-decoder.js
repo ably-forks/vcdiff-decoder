@@ -1539,6 +1539,13 @@ function VCDiff(delta, source) {
   this.targetWindows = new TypedArray.TypedArrayList();
 }
 
+VCDiff.hasVCDiffHeader = function (delta) {
+  return delta && delta[0] === 214 && // V
+  delta[1] === 195 && // C
+  delta[2] === 196 && // D
+  delta[3] === 0; // \0
+};
+
 VCDiff.prototype.decode = function () {
   this._consumeHeader();
 
@@ -1561,12 +1568,7 @@ VCDiff.prototype.decode = function () {
 };
 
 VCDiff.prototype._consumeHeader = function () {
-  var hasVCDiffHeader = this.delta[0] === 214 && // V
-  this.delta[1] === 195 && // C
-  this.delta[2] === 196 && // D
-  this.delta[3] === 0; // \0
-
-  if (!hasVCDiffHeader) {
+  if (!VCDiff.hasVCDiffHeader(this.delta)) {
     throw new errors.InvalidDelta('first 3 bytes not VCD');
   }
 
@@ -5262,32 +5264,40 @@ var utf8 = __webpack_require__(155);
 
 var base64 = __webpack_require__(156);
 
+var isBuffer = __webpack_require__(157);
+
+var vcdiff = __webpack_require__(65);
+
 var vcdiffDecoder = __webpack_require__(1);
 
 function VcdiffSequenceDecoder(source, sourceId) {
   initialize.call(this, source, sourceId);
 }
 
+VcdiffSequenceDecoder.isDelta = function (data) {
+  return vcdiff.hasVCDiffHeader(toUint8Array(data));
+};
+
 VcdiffSequenceDecoder.prototype.decodeToUint8Array = function (delta, deltaId, sourceId) {
   if (this.sourceId !== sourceId) {
-    throw new Error('Sequence discontinuity - the provided sourceId does not match the last sourceId');
+    throw new Error('The provided sourceId does not match the last preserved sourceId in the sequence');
   }
 
-  var deltaAsUint8Array = undefined;
+  if (!isBinaryData(delta)) {
+    throw new Error('The provided delta does not represent binary data');
+  }
 
-  if (typeof delta === 'string') {
-    deltaAsUint8Array = new Uint8Array(base64.length(delta));
-    base64.decode(delta, deltaAsUint8Array, 0);
-  } else if (isArrayBuffer(delta)) {
-    deltaAsUint8Array = new Uint8Array(delta);
-  } else {
-    deltaAsUint8Array = delta;
+  var deltaAsUint8Array = toUint8Array(delta);
+
+  if (!VcdiffSequenceDecoder.isDelta(deltaAsUint8Array)) {
+    throw new Error('The provided delta is not a valid VCDIFF delta');
   }
 
   var decoded = vcdiffDecoder.decodeSync(deltaAsUint8Array, this.source);
   this.source = decoded;
-  this.sourceId = deltaId;
-  return decoded;
+  this.sourceId = deltaId; // Return copy to avoid future delta application failures if the returned array is changed
+
+  return new Uint8Array(decoded);
 };
 
 VcdiffSequenceDecoder.prototype.decodeToUtf8String = function (delta, deltaId, sourceId) {
@@ -5309,29 +5319,52 @@ function initialize(source, sourceId) {
     throw new Error('VcdiffSequenceDecoder cannot be initialized or reinitialized with null or undefined');
   }
 
-  if (isUint8Array(source)) {
-    this.source = source;
-  } else if (typeof source === 'string') {
-    this.source = utf8Encode(source);
-  } else {
-    this.source = utf8Encode(JSON.stringify(source));
-  }
-
+  this.source = toUint8Array(source);
   this.sourceId = sourceId;
 }
 
 function isUint8Array(object) {
-  return object !== null && object !== undefined && object.constructor === Uint8Array;
+  return object instanceof Uint8Array;
 }
 
 function isArrayBuffer(object) {
-  return object !== null && object !== undefined && object.constructor === ArrayBuffer;
+  return object instanceof ArrayBuffer;
+}
+
+function isBinaryData(data) {
+  return isBase64String(data) || isArrayBuffer(data) || isUint8Array(data) || isBuffer(data);
+}
+
+function isString(data) {
+  return typeof data === 'string';
+}
+
+function isBase64String(data) {
+  return isString(data) && base64.test(data);
+}
+
+function base64Decode(str) {
+  var result = new Uint8Array(base64.length(str));
+  base64.decode(str, result, 0);
+  return result;
 }
 
 function utf8Encode(str) {
   var result = new Uint8Array(utf8.length(str));
   utf8.write(str, result, 0);
   return result;
+}
+
+function toUint8Array(data) {
+  if (isString(data)) {
+    return isBase64String(data) ? base64Decode(data) : utf8Encode(data);
+  } else if (isArrayBuffer(data)) {
+    return new Uint8Array(data);
+  } else if (isUint8Array(data) || isBuffer(data)) {
+    return data;
+  } else {
+    return utf8Encode(JSON.stringify(data));
+  }
 }
 
 module.exports = VcdiffSequenceDecoder;
@@ -5616,6 +5649,23 @@ base64.decode = function decode(string, buffer, offset) {
 base64.test = function test(string) {
     return /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(string);
 };
+
+
+/***/ }),
+/* 157 */
+/***/ (function(module, exports) {
+
+/*!
+ * Determine if an object is a Buffer
+ *
+ * @author   Feross Aboukhadijeh <https://feross.org>
+ * @license  MIT
+ */
+
+module.exports = function isBuffer (obj) {
+  return obj != null && obj.constructor != null &&
+    typeof obj.constructor.isBuffer === 'function' && obj.constructor.isBuffer(obj)
+}
 
 
 /***/ })

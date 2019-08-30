@@ -1,0 +1,8 @@
+{
+  "name": "sample-app-mqtt",
+  "version": "1.0.0",
+  "dependencies": {
+    "mqtt": "^3.0.0",
+    "text-encoding": "^0.7.0"
+  }
+}

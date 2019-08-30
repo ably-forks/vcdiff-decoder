@@ -54,6 +54,7 @@
   "homepage": "https://github.com/ably-forks/vcdiff-decoder",
   "dependencies": {
     "@protobufjs/base64": "^1.1.2",
-    "@protobufjs/utf8": "^1.1.0"
+    "@protobufjs/utf8": "^1.1.0",
+    "is-buffer": "^2.0.3"
   }
 }
