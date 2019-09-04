@@ -1,25 +1,28 @@
 var Ably = require('ably');
-var VcdiffSequenceDecoder = require('../../lib/vcdiff_sequence_decoder');
+var DeltaCodec = require('../../lib');
 
 var client = new Ably.Realtime('HG2KVw.AjZP_A:W7VXUG9yw1-Cza6u');
-client.connection.on('connected', function() {
-	var channel = client.channels.get('[?delta=vcdiff]delta-sample-app');
-	var vcdiffDecoder = undefined;
+var channel = client.channels.get('[?delta=vcdiff]delta-sample-app');
+var channelDecoder = new DeltaCodec.VcdiffDecoder();
 
-	channel.subscribe(function(message) {
-		var data = message.data;
-		if (message.extras && message.extras.delta && message.extras.delta.format === 'vcdiff') {
-			data = vcdiffDecoder.decodeToObject(message.data, message.id, message.extras.delta.from);
-		} else if (vcdiffDecoder) {
-			vcdiffDecoder.reinitialize(message.data, message.id);
+channel.subscribe(function(message) {
+	var data = message.data;
+	try {
+		if (message.extras && message.extras.delta) {
+			data = channelDecoder.applyDelta(data, message.id, message.extras.delta.from).asObject();
 		} else {
-			vcdiffDecoder = new VcdiffSequenceDecoder(message.data, message.id);
+			channelDecoder.setBase(data, message.id);
 		}
+	} catch (e) {
+		/* Delta decoder error */
+	}
 
-		// Process message
-		console.log(data);
-	});
-	
+	/* Process decoded data */
+	console.log(data);
+});
+
+/* Publisher */
+client.connection.on('connected', function() {
 	var data = {
 		foo: 'bar',
 		count: 1,

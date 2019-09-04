@@ -1,9 +1,8 @@
 var Ably = require('ably');
 
 var client = new Ably.Realtime('HG2KVw.AjZP_A:W7VXUG9yw1-Cza6u');
+var channel = client.channels.get('delta-sample-app');
 client.connection.on('connected', function() {
-	var channel = client.channels.get('delta-sample-app');
-	
 	var data = {
 		foo: 'bar',
 		count: 1,

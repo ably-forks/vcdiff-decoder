@@ -28,7 +28,7 @@ module.exports = function (grunt) {
 				entry: './lib/index.js',
 				output: {
 					path: path.resolve(__dirname, 'dist'),
-					library: 'vcdiff'
+					library: 'DeltaCodec'
 				},
 				module: {
 					rules: [
